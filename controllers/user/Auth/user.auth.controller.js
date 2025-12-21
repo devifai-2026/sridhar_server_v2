@@ -377,7 +377,7 @@ export const forgotPassword = async (req, res) => {
 
     await user.save();
 
-    const resetUrl = `http://localhost:8080/reset-password/${resetToken}`;
+    const resetUrl = `https://sridhareducation.cloud/reset-password/${resetToken}`;
 
 await sendEmail({
   to: user.email,

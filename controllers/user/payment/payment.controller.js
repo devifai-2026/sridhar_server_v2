@@ -74,10 +74,10 @@ export const createPaymentOrder = async (req, res) => {
       merchantTransactionId,
       merchantUserId: userId,
       amount,
-      redirectUrl: `https://b4e8ad1b2493.ngrok-free.app/api/users/paymentgateway/payment/redirect?txnId=${merchantTransactionId}`,
+      redirectUrl: `https://sridhareducation.cloud/api/users/paymentgateway/payment/redirect?txnId=${merchantTransactionId}`,
       redirectMode: "REDIRECT",
       callbackUrl:
-        "https://b4e8ad1b2493.ngrok-free.app/api/users/paymentgateway/payment/callback",
+        "https://sridhareducation.cloud/api/users/paymentgateway/payment/callback",
       paymentInstrument: { type: "PAY_PAGE" },
     };
 
