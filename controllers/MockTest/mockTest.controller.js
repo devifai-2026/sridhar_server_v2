@@ -964,3 +964,16 @@ export const getUserTestStatistics = async (req, res) => {
     });
   }
 };
+
+
+export const allMockTests = async (req, res) => {
+    try {
+        const mockTests = await MockTest.find().lean();
+        const count = mockTests.length;
+        res.status(200).json({ success: true, count, mockTests });
+    }
+    catch (error) {
+        console.error("Error fetching all mock tests:", error);
+        res.status(500).json({ error: "Server error while fetching mock tests" });
+    }
+};

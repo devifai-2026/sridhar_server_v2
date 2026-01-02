@@ -63,13 +63,16 @@ export const getAllSubjects = async (req, res) => {
       const total = await Subject.countDocuments(query);
       // Return paginated results
       const data = await Subject.find(query)
+        .populate("courseId", "name") // Populate course name
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit);
       return res.status(200).json({ data, total });
     } else {
       // No pagination params - return all matching data at once
-      const data = await Subject.find(query).sort({ createdAt: -1 });
+      const data = await Subject.find(query)
+        .populate("courseId", "name") // Populate course name
+        .sort({ createdAt: -1 });
       return res.status(200).json(data);
     }
 

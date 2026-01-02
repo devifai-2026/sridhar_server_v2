@@ -67,9 +67,9 @@ import {
 import { get } from "mongoose";
 import { getAllDeviceChangeRequests, handleDeviceRequest } from "../../controllers/DeviceChangeRequest/deviceChange.controller.js"
 
-import { createMockTest, createMockTestQuestion, GetAllMockTest, DeleteMocket, updateMockTestWithQuestions , GetMockTestById, getAllQuestions, getMockTestHistory, getTestResultById, getUserTestStatistics } from "../../controllers/MockTest/mockTest.controller.js";
+import { createMockTest, createMockTestQuestion, GetAllMockTest, DeleteMocket, updateMockTestWithQuestions , GetMockTestById, getAllQuestions, getMockTestHistory, getTestResultById, getUserTestStatistics,allMockTests } from "../../controllers/MockTest/mockTest.controller.js";
 
-import { createPayment, getAllPaymentHistory, userSummary,deleteUser } from "../../controllers/Payment/payment.controller.js"
+import { createPayment, getAllPaymentHistory, userSummary,deleteUser,toggleUserStatus } from "../../controllers/Payment/payment.controller.js"
 
 import { getDashboardStats, lineChart } from "../../controllers/Dashbaord/dashboard.controller.js"
 
@@ -98,6 +98,13 @@ import{
 } from "../../controllers/subjectMangementTopic/subjectmanagementTopic.controller.js"
 import { getAllResults } from "../../controllers/MockTest/mockTestResultSubmission.controller.js";
 import uploadtoGoogleCloudWithoutCourse from "../../controllers/uploadtoGoogleCloudWithoutCourse/uploadtoGoogleCloudWithoutCourse.js";
+
+import {
+  createMockTestCategory , 
+  getAllMockTestCategories,
+  updateMockTestCategory,
+  deleteMockTestCategory
+} from "../../controllers/admin/MockTestCategory/mockTestCategory.controller.js";
 
 const router = express.Router();
 
@@ -208,6 +215,7 @@ router.delete("/delete/mockTest/:id", DeleteMocket);
 router.put("/mocktests/:testId", updateMockTestWithQuestions);
 router.get("/get/mockTestById/:id", GetMockTestById);
 router.post("/get/mockTestQuestionsById", getAllQuestions);
+router.get("/all/mockTests", allMockTests);
 
 
 // This is Payment routes
@@ -216,6 +224,7 @@ router.post("/createPayment", createPayment);
 router.post("/delete/userById", deleteUser)
 router.get("/getAllPaymentHistory", getAllPaymentHistory)
 router.get("/user-purchases-summary", userSummary)
+router.patch("/:id/toggle-status",toggleUserStatus);
 
 // this is dashboard route
 
@@ -258,5 +267,11 @@ router.get('/get/mocktest/history/by/id/:id', getTestResultById);
 
 // Get user test statistics
 router.get('/user/:userId/statistics', getUserTestStatistics);
+
+// Mock Test Category Routes
+router.post("/create/mockTestCategory", createMockTestCategory);
+router.get("/get/all/mockTestCategories", getAllMockTestCategories);
+router.put("/update/mockTestCategory/:id", updateMockTestCategory);
+router.delete("/delete/mockTestCategory/:id", deleteMockTestCategory);
 
 export default router;

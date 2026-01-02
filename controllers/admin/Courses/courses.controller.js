@@ -2,7 +2,7 @@ import Course from "../../../models/course.model.js";
 import Subject from "../../../models/subject.model.js";
 import Module from "../../../models/module.model.js";
 import Topic from "../../../models/topic.model.js"
-
+import mongoose from "mongoose";
 
 // Create a new course
 export const createCourse = async (req, res) => {
@@ -18,99 +18,122 @@ export const createCourse = async (req, res) => {
 // Get all courses
 export const getCourses = async (req, res) => {
   try {
-    // Check if page and limit exist in query; if not, return all data
-    const page = req.query.page ? parseInt(req.query.page) : null;
-    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const page = req.query.page ? parseInt(req.query.page, 10) : null;
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : null;
     const search = req.query.search || "";
     const filter = req.query.filter || "";
     const from = req.query.from;
     const to = req.query.to;
 
     let query = {};
- 
-    // Name search
+
+    // Search functionality (keep as is)
     if (search) {
       const searchRegex = { $regex: search, $options: "i" };
       query.$or = [
         { name: searchRegex },
-        { description: searchRegex },
+        { description: searchRegex }
       ];
 
       if (!isNaN(Number(search))) {
-        query.$or.push({ duration: Number(search) });
+        const numericSearch = Number(search);
+        query.$or.push(
+          { duration: numericSearch },
+          { totalChapters: numericSearch },
+          { totalTopics: numericSearch },
+          { originalPrice: numericSearch },
+          { discountedPrice: numericSearch }
+        );
       }
     }
 
-
-    if (typeof totalChapters === 'number') {
-      query.totalChapters = totalChapters;
-    }
-
-    if (typeof totalTopics === 'number') {
-      query.totalTopics = totalTopics;
-    }
-
-    if (typeof isActive === 'boolean') {
-      query.isActive = isActive;
-    }
-
-    if (typeof discountedPrice === 'number') {
-      query.discountedPrice = discountedPrice;
-    }
-
-    if (typeof originalPrice === 'number') {
-      query.originalPrice = originalPrice;
-    }
-
-
-
-
-    // Filter by date range (same as before)
+    // MODIFIED DATE RANGE FILTERS USING _id
+    const now = new Date();
     if (filter === "today") {
       const start = new Date();
       start.setHours(0, 0, 0, 0);
       const end = new Date();
       end.setHours(23, 59, 59, 999);
-      query.createdAt = { $gte: start, $lte: end };
+      query._id = {
+        $gte: mongoose.Types.ObjectId.createFromTime(start.getTime() / 1000),
+        $lte: mongoose.Types.ObjectId.createFromTime(end.getTime() / 1000)
+      };
     } else if (filter === "week") {
-      const now = new Date();
       const first = now.getDate() - now.getDay();
       const start = new Date(now.setDate(first));
       start.setHours(0, 0, 0, 0);
       const end = new Date();
       end.setHours(23, 59, 59, 999);
-      query.createdAt = { $gte: start, $lte: end };
+      query._id = {
+        $gte: mongoose.Types.ObjectId.createFromTime(start.getTime() / 1000),
+        $lte: mongoose.Types.ObjectId.createFromTime(end.getTime() / 1000)
+      };
     } else if (filter === "month") {
-      const now = new Date();
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      query.createdAt = { $gte: start, $lte: end };
+      const end = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+      query._id = {
+        $gte: mongoose.Types.ObjectId.createFromTime(start.getTime() / 1000),
+        $lte: mongoose.Types.ObjectId.createFromTime(end.getTime() / 1000)
+      };
     } else if (filter === "year") {
-      const now = new Date();
       const start = new Date(now.getFullYear(), 0, 1);
       const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-      query.createdAt = { $gte: start, $lte: end };
+      query._id = {
+        $gte: mongoose.Types.ObjectId.createFromTime(start.getTime() / 1000),
+        $lte: mongoose.Types.ObjectId.createFromTime(end.getTime() / 1000)
+      };
     } else if (filter === "custom" && from && to) {
-      query.createdAt = { $gte: new Date(from), $lte: new Date(to) };
+      const startDate = new Date(from);
+      const endDate = new Date(to);
+      endDate.setHours(23, 59, 59, 999);
+      query._id = {
+        $gte: mongoose.Types.ObjectId.createFromTime(startDate.getTime() / 1000),
+        $lte: mongoose.Types.ObjectId.createFromTime(endDate.getTime() / 1000)
+      };
     }
 
+    // Fetch courses with population
+    let coursesQuery = Course.find(query)
+      .populate("CreatedBy", "username email")
+      .sort({ _id: -1 }); // Sort by _id instead of createdAt
+
+    let total = null;
     if (page && limit) {
-      // Total count before pagination
-      const total = await Course.countDocuments(query);
-      // Return paginated results
-      const data = await Course.find(query)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit);
-      return res.status(200).json({ data, total });
-    } else {
-      // No pagination params - return all matching data at once
-      const data = await Course.find(query).sort({ createdAt: -1 });
-      return res.status(200).json(data);
+      total = await Course.countDocuments(query);
+      coursesQuery = coursesQuery.skip((page - 1) * limit).limit(limit);
     }
 
+    const courses = await coursesQuery;
+
+    // Response
+    if (page && limit) {
+      return res.status(200).json({
+        success: true,
+        data: courses,
+        total,
+        page,
+        limit,
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        data: courses,
+      });
+    }
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    console.error("Error in getCourses:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
 

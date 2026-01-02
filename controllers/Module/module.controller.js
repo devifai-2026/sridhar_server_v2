@@ -5,7 +5,37 @@ import Topic from "../../models/topic.model.js"
 
 export const createModule = async (req, res) => {
   try {
-    const { courseId, subjectId, name, description, image, order,isActive } = req.body;
+    const { courseId, subjectId, name, description, image, order, isActive } = req.body;
+    // Validate required fields
+    if (!courseId || !subjectId || !name ) {
+      return res.status(400).json({
+        error:
+          "Missing required fields: courseId, subjectId, name, image order are required",
+      });
+    }
+
+    // Validate order cannot be 0 or negative
+    const orderNumber = parseInt(order);
+    if (orderNumber <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Order must be a positive number (greater than 0)",
+      });
+    }
+
+    // Check for duplicate order in the same module
+    const existingModule = await Module.findOne({
+      courseId,
+      subjectId,
+      order: orderNumber,
+    });
+
+    if (existingModule) {
+      return res.status(409).json({
+        success: false,
+        error: `Module with order ${orderNumber} already exists in this subject. Please use a different order number.`,
+      });
+    }
     const newModule = new Module({
       courseId,
       subjectId,
@@ -98,13 +128,18 @@ export const getAllModules = async (req, res) => {
       const total = await Module.countDocuments(query);
       // Return paginated results
       const data = await Module.find(query)
+        .populate("courseId", "name")
+        .populate("subjectId", "subjectName")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit);
       return res.status(200).json({ data, total });
     } else {
       // No pagination params - return all matching data at once
-      const data = await Module.find(query).sort({ createdAt: -1 });
+      const data = await Module.find(query)
+        .populate("courseId", "name")
+        .populate("subjectId", "subjectName")
+        .sort({ createdAt: -1 });
       return res.status(200).json(data);
     }
 

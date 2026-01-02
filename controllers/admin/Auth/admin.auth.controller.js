@@ -13,8 +13,8 @@ export const loginAdmin = async (req, res) => {
   if (admin.status !== "active")
     return res.status(403).json({ message: "Admin not active" });
 
-  // const isMatch = await bcrypt.compare(password, admin.password);
-  // if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+  const isMatch = await bcrypt.compare(password, admin.password);
+  if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
   const { token, refreshToken } = generateTokens(admin._id);
   admin.refreshToken = refreshToken;

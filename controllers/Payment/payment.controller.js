@@ -552,6 +552,7 @@ export const userSummary = async (req, res) => {
           phone: 1,
           deviceId: 1,
           createdAt: 1,
+          isActive:1,
           fullName: {
             $concat: [
               { $ifNull: ["$firstName", ""] },
@@ -686,6 +687,21 @@ export const deleteUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
     res.json({ message: "User deleted successfully", user: deletedUser });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const toggleUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    user.isActive = !user.isActive;
+    await user.save();
+    res.json({ message: `User has been ${user.isActive ? 'activated' : 'deactivated'}.`, user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

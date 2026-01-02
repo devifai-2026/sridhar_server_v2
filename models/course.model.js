@@ -68,6 +68,8 @@ const courseSchema = new Schema({
     },
   },
   CreatedBy: { type: Types.ObjectId, required: true, ref: "Admin" },
+  }, {
+  timestamps: true 
 });
 
 const Course = model("Course", courseSchema);
