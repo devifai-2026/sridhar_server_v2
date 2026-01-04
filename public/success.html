@@ -222,42 +222,42 @@
 
   <script>
     // Create confetti effect
-    function createConfetti() {
-      const colors = ['#389e0d', '#52c41a', '#73d13d', '#95de64'];
+    // function createConfetti() {
+    //   const colors = ['#389e0d', '#52c41a', '#73d13d', '#95de64'];
       
-      for (let i = 0; i < 50; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
+    //   for (let i = 0; i < 50; i++) {
+    //     const confetti = document.createElement('div');
+    //     confetti.className = 'confetti';
         
-        // Random position and color
-        const left = Math.random() * 100;
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        const size = Math.random() * 10 + 5;
-        const delay = Math.random() * 3;
-        const duration = Math.random() * 2 + 2;
+    //     // Random position and color
+    //     const left = Math.random() * 100;
+    //     const color = colors[Math.floor(Math.random() * colors.length)];
+    //     const size = Math.random() * 10 + 5;
+    //     const delay = Math.random() * 3;
+    //     const duration = Math.random() * 2 + 2;
         
-        confetti.style.left = `${left}%`;
-        confetti.style.background = color;
-        confetti.style.width = `${size}px`;
-        confetti.style.height = `${size}px`;
-        confetti.style.animation = `confetti-fall ${duration}s ease-in ${delay}s forwards`;
+    //     confetti.style.left = `${left}%`;
+    //     confetti.style.background = color;
+    //     confetti.style.width = `${size}px`;
+    //     confetti.style.height = `${size}px`;
+    //     confetti.style.animation = `confetti-fall ${duration}s ease-in ${delay}s forwards`;
         
-        document.body.appendChild(confetti);
+    //     document.body.appendChild(confetti);
         
-        // Remove confetti after animation completes
-        setTimeout(() => {
-          confetti.remove();
-        }, (duration + delay) * 1000);
-      }
-    }
+    //     // Remove confetti after animation completes
+    //     setTimeout(() => {
+    //       confetti.remove();
+    //     }, (duration + delay) * 1000);
+    //   }
+    // }
     
-    // Create confetti when page loads
-    document.addEventListener('DOMContentLoaded', () => {
-      createConfetti();
+    // // Create confetti when page loads
+    // document.addEventListener('DOMContentLoaded', () => {
+    //   createConfetti();
       
-      // Create more confetti every 3 seconds
-      setInterval(createConfetti, 3000);
-    });
+    //   // Create more confetti every 3 seconds
+    //   setInterval(createConfetti, 3000);
+    // });
   </script>
 </body>
 </html>
