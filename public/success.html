@@ -3,25 +3,261 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Payment Successful</title>
+  <title>Payment Successful | Sridhar Edu</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Poppins', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .success-card {
+      background: white;
+      border-radius: 24px;
+      padding: 60px 40px;
       text-align: center;
-      padding-top: 80px;
-      background: #f6ffed;
-      color: #389e0d;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+      position: relative;
+      overflow: hidden;
     }
+
+    .success-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #389e0d, #52c41a, #73d13d);
+    }
+
+    .logo-container {
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .logo {
+      height: 65px;
+      width: auto;
+      filter: drop-shadow(0 4px 8px rgba(56, 158, 13, 0.2));
+    }
+
+    .success-icon {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .success-icon::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #389e0d, #52c41a);
+      border-radius: 50%;
+      opacity: 0.15;
+      animation: ripple 3s ease-out infinite;
+    }
+
+    .success-icon::after {
+      content: '';
+      position: absolute;
+      width: 80%;
+      height: 80%;
+      background: linear-gradient(135deg, #389e0d, #52c41a);
+      border-radius: 50%;
+      opacity: 0.1;
+      animation: ripple 3s ease-out infinite 0.5s;
+    }
+
+    .success-icon i {
+      font-size: 48px;
+      color: #52c41a;
+      position: relative;
+      z-index: 2;
+      background: white;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 25px rgba(82, 196, 26, 0.3);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(0.8); opacity: 0.2; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
     h1 {
-      font-size: 40px;
+      font-size: 36px;
+      font-weight: 700;
+      color: #1f1f1f;
+      margin-bottom: 15px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #389e0d, #52c41a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    p {
+
+    .subtitle {
       font-size: 18px;
+      color: #666;
+      margin-bottom: 30px;
+      line-height: 1.6;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      background: linear-gradient(45deg, #389e0d, #52c41a, #73d13d);
+      border-radius: 50%;
+      opacity: 0;
+    }
+
+    .footer-note {
+      margin-top: 40px;
+      padding-top: 25px;
+      border-top: 1px solid #f0f0f0;
+      font-size: 14px;
+      color: #888;
+    }
+
+    .footer-note p {
+      margin-bottom: 8px;
+    }
+
+    .contact-info {
+      font-size: 13px;
+      color: #666;
+      margin-top: 10px;
+    }
+
+    .contact-info span {
+      color: #389e0d;
+      font-weight: 500;
+    }
+
+    /* Confetti animation */
+    @keyframes confetti-fall {
+      0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(500px) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    /* Responsive design */
+    @media (max-width: 480px) {
+      .success-card {
+        padding: 40px 25px;
+      }
+      
+      h1 {
+        font-size: 30px;
+      }
+      
+      .subtitle {
+        font-size: 16px;
+      }
+      
+      .logo {
+        height: 55px;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Payment Successful 🎉</h1>
-  <p>Your payment has been processed successfully.</p>
+  <div class="success-card">
+    <div class="logo-container">
+      <img src="https://i.ibb.co/84nTWmzY/logo.png" alt="Sridhar Edu Logo" class="logo">
+    </div>
+    
+    <div class="success-icon">
+      <i class="fas fa-check"></i>
+    </div>
+    
+    <h1>Payment Successful!</h1>
+    
+    <p class="subtitle">
+      Your payment has been processed successfully. Thank you for choosing Sridhar Edu!
+    </p>
+    
+    <div class="footer-note">
+      <p>🎉 Congratulations on your new learning journey!</p>
+    </div>
+  </div>
+
+  <script>
+    // Create confetti effect
+    function createConfetti() {
+      const colors = ['#389e0d', '#52c41a', '#73d13d', '#95de64'];
+      
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        
+        // Random position and color
+        const left = Math.random() * 100;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const size = Math.random() * 10 + 5;
+        const delay = Math.random() * 3;
+        const duration = Math.random() * 2 + 2;
+        
+        confetti.style.left = `${left}%`;
+        confetti.style.background = color;
+        confetti.style.width = `${size}px`;
+        confetti.style.height = `${size}px`;
+        confetti.style.animation = `confetti-fall ${duration}s ease-in ${delay}s forwards`;
+        
+        document.body.appendChild(confetti);
+        
+        // Remove confetti after animation completes
+        setTimeout(() => {
+          confetti.remove();
+        }, (duration + delay) * 1000);
+      }
+    }
+    
+    // Create confetti when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      createConfetti();
+      
+      // Create more confetti every 3 seconds
+      setInterval(createConfetti, 3000);
+    });
+  </script>
 </body>
 </html>
