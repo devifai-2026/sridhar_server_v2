@@ -103,7 +103,8 @@ import {
   createMockTestCategory , 
   getAllMockTestCategories,
   updateMockTestCategory,
-  deleteMockTestCategory
+  deleteMockTestCategory,
+  getMockTestCategoryById
 } from "../../controllers/admin/MockTestCategory/mockTestCategory.controller.js";
 
 const router = express.Router();
@@ -271,6 +272,7 @@ router.get('/user/:userId/statistics', getUserTestStatistics);
 // Mock Test Category Routes
 router.post("/create/mockTestCategory", createMockTestCategory);
 router.get("/get/all/mockTestCategories", getAllMockTestCategories);
+router.get("/get/single/mockTest/:id", getMockTestCategoryById);
 router.put("/update/mockTestCategory/:id", updateMockTestCategory);
 router.delete("/delete/mockTestCategory/:id", deleteMockTestCategory);
 
