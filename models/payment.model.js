@@ -6,7 +6,7 @@ const PaymentSchema = new mongoose.Schema({
 
   paymentType: { 
     type: String, 
-    enum: ["course", "test", "subject"], 
+    enum: ["course", "test", "category"], 
     required: true 
   },
 

@@ -12,6 +12,7 @@ const SALT_INDEX = 1;
 // =============================
 // CREATE PAYMENT ORDER
 // =============================
+
 export const createPaymentOrder = async (req, res) => {
   try {
     const { userId, paymentType, paymentForId } = req.body;
@@ -25,6 +26,7 @@ export const createPaymentOrder = async (req, res) => {
     }
 
     let amount = 0;
+    let itemName = "";
 
     // ----------------------------
     // 📘 COURSE PAYMENT
@@ -38,6 +40,7 @@ export const createPaymentOrder = async (req, res) => {
           .json({ success: false, message: "Course not found" });
 
       amount = course.discountedPrice * 100; // convert to paise
+      itemName = course.title;
     }
 
     // ----------------------------
@@ -52,6 +55,37 @@ export const createPaymentOrder = async (req, res) => {
           .json({ success: false, message: "Mock Test not found" });
 
       amount = mockTest.price * 100;
+      itemName = mockTest.title;
+    }
+
+    // ----------------------------
+    // 📚 CATEGORY PAYMENT
+    // ----------------------------
+    else if (paymentType === "category") {
+      const category = await MocktestCategory.findById(paymentForId);
+
+      if (!category)
+        return res
+          .status(404)
+          .json({ success: false, message: "Category not found" });
+
+      amount = category.price * 100;
+      itemName = category.name;
+      
+      // Check if user already purchased this category
+      const existingPurchase = await UserPayment.findOne({
+        userId,
+        paymentType: "category",
+        paymentForId,
+        status: "completed"
+      });
+
+      if (existingPurchase) {
+        return res.status(400).json({
+          success: false,
+          message: "You have already purchased this category",
+        });
+      }
     }
 
     // ----------------------------
@@ -60,7 +94,15 @@ export const createPaymentOrder = async (req, res) => {
     else {
       return res.status(400).json({
         success: false,
-        message: "Invalid paymentType. Must be 'course' or 'test'.",
+        message: "Invalid paymentType. Must be 'course', 'test', or 'category'.",
+      });
+    }
+
+    // Validate amount
+    if (amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid amount. Item might be free.",
       });
     }
 
@@ -74,11 +116,12 @@ export const createPaymentOrder = async (req, res) => {
       merchantTransactionId,
       merchantUserId: userId,
       amount,
-      redirectUrl: `https://sridhareducation.cloud/api/users/paymentgateway/payment/redirect?txnId=${merchantTransactionId}`,
+      redirectUrl: `https://sridhareducation.cloud/api/users/paymentgateway/payment/redirect?txnId=${merchantTransactionId}&paymentType=${paymentType}`,
       redirectMode: "REDIRECT",
-      callbackUrl:
-        "https://sridhareducation.cloud/api/users/paymentgateway/payment/callback",
+      callbackUrl: "https://sridhareducation.cloud/api/users/paymentgateway/payment/callback",
       paymentInstrument: { type: "PAY_PAGE" },
+      merchantOrderId: `${paymentType}_${paymentForId}_${Date.now()}`,
+      message: `Payment for ${paymentType}: ${itemName}`,
     };
 
     const base64Body = Buffer.from(JSON.stringify(payBody)).toString("base64");
@@ -111,7 +154,7 @@ export const createPaymentOrder = async (req, res) => {
     if (!data.success)
       return res.status(400).json({
         success: false,
-        message: data.message,
+        message: data.message || "Payment gateway error",
       });
 
     const payUrl = data.data.instrumentResponse.redirectInfo.url;
@@ -121,21 +164,33 @@ export const createPaymentOrder = async (req, res) => {
     // ----------------------------
     await Payment.create({
       userId,
-      paymentType, // "course" or "test"
+      paymentType, // "course", "test", or "category"
       paymentForId,
+      itemName,
       amount: amount / 100, // convert back to rupees
       transactionId: merchantTransactionId,
       status: "pending",
+      metadata: {
+        itemType: paymentType,
+        itemId: paymentForId,
+        itemName: itemName,
+      },
     });
 
     return res.json({
       success: true,
       payUrl,
       transactionId: merchantTransactionId,
+      itemName,
+      amount: amount / 100,
     });
   } catch (err) {
     console.error("❌ Payment Error:", err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ 
+      success: false, 
+      message: "Internal server error",
+      error: err.message 
+    });
   }
 };
 
