@@ -5,6 +5,7 @@ import CourseAccess from "../../../models/courseAccess.model.js";
 import MockTest from "../../../models/mockTest.model.js";
 import mockTestAccess from "../../../models/mockTestAccess.js";
 import mongoose from 'mongoose'; // or const mongoose = require('mongoose');
+import MocktestCategory from "../../../models/mocktestCategory.model.js";
 const PHONEPE_MERCHANT_ID = "PGTESTPAYUAT86";
 const SALT_KEY = "96434309-7796-489d-8924-ab56988a6076";
 const SALT_INDEX = 1;
