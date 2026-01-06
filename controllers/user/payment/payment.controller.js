@@ -223,37 +223,116 @@ export const paymentCallback = async (req, res) => {
 
     await payment.save();
 
-    if (payment.status === "success" && payment.paymentType === "course") {
-      const course = await Course.findById(payment.paymentForId);
+    // Only process if payment was successful
+    if (payment.status === "success") {
+      
+      // ----------------------------
+      // 📘 COURSE PAYMENT
+      // ----------------------------
+      if (payment.paymentType === "course") {
+        const course = await Course.findById(payment.paymentForId);
 
-      const months = course.duration;
-      const startDate = new Date();
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + months);
+        const months = course.duration;
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + months);
 
-      await CourseAccess.create({
-        userId: payment.userId,
-        courseId: payment.paymentForId,
-        startDate,
-        endDate,
-      });
-    } else if (payment.status === "success" && payment.paymentType === "test") {
-      const mockTest = await MockTest.findById(payment.paymentForId);
-
-      if (!mockTest) {
-        console.error("Mock Test not found");
+        await CourseAccess.create({
+          userId: payment.userId,
+          courseId: payment.paymentForId,
+          startDate,
+          endDate,
+        });
       }
+      
+      // ----------------------------
+      // 🧪 TEST PAYMENT (Individual Test)
+      // ----------------------------
+      else if (payment.paymentType === "test") {
+        const mockTest = await MockTest.findById(payment.paymentForId);
 
-      await mockTestAccess.create({
-        userId: payment.userId,
-        mockTestId: payment.paymentForId,
-        isCompleted: false,
-        transactionId: merchantTransactionId
-      });
+        if (!mockTest) {
+          console.error("Mock Test not found");
+          // Continue anyway, don't throw error
+        }
+
+        await mockTestAccess.create({
+          userId: payment.userId,
+          mockTestId: payment.paymentForId,
+          isCompleted: false,
+          transactionId: merchantTransactionId,
+          purchaseDate: new Date()
+        });
+      }
+      
+      // ----------------------------
+      // 📚 CATEGORY PAYMENT
+      // ----------------------------
+      else if (payment.paymentType === "category") {
+        const category = await MocktestCategory.findById(payment.paymentForId)
+          .populate("mocktestIds", "_id title price");
+        
+        if (!category) {
+          console.error("Category not found for ID:", payment.paymentForId);
+          // Continue anyway, don't throw error
+        } else {
+          console.log(`Processing category purchase: ${category.name} with ${category.mocktestIds?.length || 0} tests`);
+          
+          // 1. Create a UserPayment record for the category
+          await UserPayment.create({
+            userId: payment.userId,
+            paymentType: "category",
+            paymentForId: payment.paymentForId,
+            categoryId: payment.paymentForId,
+            transactionId: merchantTransactionId,
+            amount: payment.amount,
+            status: "completed",
+            purchasedAt: new Date(),
+            expiresAt: null // Or set expiration if needed
+          });
+          
+          // 2. Create MockTestAccess records for ALL tests in the category
+          if (category.mocktestIds && category.mocktestIds.length > 0) {
+            const mockTestAccessRecords = [];
+            
+            for (const test of category.mocktestIds) {
+              mockTestAccessRecords.push({
+                userId: payment.userId,
+                mockTestId: test._id,
+                isCompleted: false,
+                transactionId: merchantTransactionId,
+                purchaseDate: new Date(),
+                // Add category reference
+                categoryId: payment.paymentForId,
+                purchasedVia: "category" // To distinguish from individual purchases
+              });
+            }
+            
+            // Bulk insert for better performance
+            if (mockTestAccessRecords.length > 0) {
+              await mockTestAccess.insertMany(mockTestAccessRecords);
+              console.log(`Created ${mockTestAccessRecords.length} test access records for category: ${category.name}`);
+            }
+          } else {
+            console.warn(`Category ${category.name} has no tests`);
+          }
+          
+          // 3. Optional: Create a CategoryAccess record if you want separate tracking
+          await CategoryAccess.create({
+            userId: payment.userId,
+            categoryId: payment.paymentForId,
+            transactionId: merchantTransactionId,
+            purchasedAt: new Date(),
+            totalTests: category.mocktestIds?.length || 0,
+            completedTests: 0
+          });
+        }
+      }
     }
 
     res.status(200).send("OK");
   } catch (err) {
+    console.error("❌ Payment callback error:", err);
     res.status(500).send("ERROR");
   }
 };
