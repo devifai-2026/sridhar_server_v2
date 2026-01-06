@@ -33,7 +33,7 @@ const MockTestAccessSchema = new mongoose.Schema({
   },
   purchasedVia: {
     type: String,
-    enum: ["individual", "category", "bundle"],
+    enum: ["individual", "category"],
     default: "individual"
   }
 }, {

@@ -292,6 +292,7 @@ export const paymentCallback = async (req, res) => {
                 purchaseDate: new Date(),
                 // Add category reference
                 categoryId: payment.paymentForId,
+                purchasedVia: "category" // To distinguish from individual purchases
               });
             }
             
