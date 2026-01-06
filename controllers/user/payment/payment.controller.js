@@ -74,7 +74,7 @@ export const createPaymentOrder = async (req, res) => {
       itemName = category.name;
       
       // Check if user already purchased this category
-      const existingPurchase = await UserPayment.findOne({
+      const existingPurchase = await Payment.findOne({
         userId,
         paymentType: "category",
         paymentForId,
