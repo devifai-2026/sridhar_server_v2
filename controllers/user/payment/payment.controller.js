@@ -365,7 +365,7 @@ export const getPaymentHistory = async (req, res) => {
         testAccessQuery.mockTestId = paymentForObjectId;
       }
 
-      const mockTestAccessRecords = await MockTestAccess.find(testAccessQuery)
+      const mockTestAccessRecords = await mockTestAccess.find(testAccessQuery)
         .sort({ purchaseDate: -1 })
         .populate("mockTestId", "title price")
         .populate("categoryId", "name")
