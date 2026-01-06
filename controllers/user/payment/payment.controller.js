@@ -277,19 +277,7 @@ export const paymentCallback = async (req, res) => {
           // Continue anyway, don't throw error
         } else {
           console.log(`Processing category purchase: ${category.name} with ${category.mocktestIds?.length || 0} tests`);
-          
-          // 1. Create a UserPayment record for the category
-          await UserPayment.create({
-            userId: payment.userId,
-            paymentType: "category",
-            paymentForId: payment.paymentForId,
-            categoryId: payment.paymentForId,
-            transactionId: merchantTransactionId,
-            amount: payment.amount,
-            status: "completed",
-            purchasedAt: new Date(),
-            expiresAt: null // Or set expiration if needed
-          });
+        
           
           // 2. Create MockTestAccess records for ALL tests in the category
           if (category.mocktestIds && category.mocktestIds.length > 0) {
@@ -304,7 +292,6 @@ export const paymentCallback = async (req, res) => {
                 purchaseDate: new Date(),
                 // Add category reference
                 categoryId: payment.paymentForId,
-                purchasedVia: "category" // To distinguish from individual purchases
               });
             }
             
@@ -316,16 +303,6 @@ export const paymentCallback = async (req, res) => {
           } else {
             console.warn(`Category ${category.name} has no tests`);
           }
-          
-          // 3. Optional: Create a CategoryAccess record if you want separate tracking
-          await CategoryAccess.create({
-            userId: payment.userId,
-            categoryId: payment.paymentForId,
-            transactionId: merchantTransactionId,
-            purchasedAt: new Date(),
-            totalTests: category.mocktestIds?.length || 0,
-            completedTests: 0
-          });
         }
       }
     }
