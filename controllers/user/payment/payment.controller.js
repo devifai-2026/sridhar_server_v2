@@ -327,19 +327,105 @@ export const getPaymentHistory = async (req, res) => {
     }
 
     // Convert string IDs to ObjectId
-    const query = { 
-      userId: new mongoose.Types.ObjectId(userId) 
-    };
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    let paymentForObjectId = null;
     
-    // Only add paymentForId to query if it's provided
     if (paymentForId) {
-      query.paymentForId = new mongoose.Types.ObjectId(paymentForId);
+      try {
+        paymentForObjectId = new mongoose.Types.ObjectId(paymentForId);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid paymentForId format",
+        });
+      }
     }
 
-    const payments = await Payment.find(query)
+    // 1. First try to find in Payment collection
+    let query = { 
+      userId: userObjectId 
+    };
+    
+    if (paymentForObjectId) {
+      query.paymentForId = paymentForObjectId;
+    }
+
+    let payments = await Payment.find(query)
       .sort({ createdAt: -1 })
       .populate("paymentForId", "name title")
       .lean();
+
+    // 2. If no payments found, check MockTestAccess
+    if (!payments || payments.length === 0) {
+      const testAccessQuery = { 
+        userId: userObjectId 
+      };
+      
+      if (paymentForObjectId) {
+        testAccessQuery.mockTestId = paymentForObjectId;
+      }
+
+      const mockTestAccessRecords = await MockTestAccess.find(testAccessQuery)
+        .sort({ purchaseDate: -1 })
+        .populate("mockTestId", "title price")
+        .populate("categoryId", "name")
+        .lean();
+
+      // 3. For category purchases, find the original payment record
+      const uniqueTransactionIds = [...new Set(mockTestAccessRecords
+        .filter(record => record.transactionId)
+        .map(record => record.transactionId))];
+
+      if (uniqueTransactionIds.length > 0) {
+        const paymentRecords = await Payment.find({
+          transactionId: { $in: uniqueTransactionIds }
+        })
+        .populate("paymentForId", "name title")
+        .lean();
+
+        // 4. Format the data properly
+        payments = paymentRecords.map(payment => {
+          // Find related test access records for this transaction
+          const relatedAccessRecords = mockTestAccessRecords.filter(
+            record => record.transactionId === payment.transactionId
+          );
+
+          // If it's a category purchase, add test details
+          if (payment.paymentType === 'category') {
+            return {
+              ...payment,
+              categoryDetails: {
+                testsPurchased: relatedAccessRecords.length,
+                tests: relatedAccessRecords.map(record => ({
+                  testId: record.mockTestId?._id,
+                  testTitle: record.mockTestId?.title,
+                  isCompleted: record.isCompleted,
+                  purchasedVia: record.purchasedVia
+                }))
+              }
+            };
+          } else if (payment.paymentType === 'test') {
+            // For individual test purchases, find the matching access record
+            const testAccess = mockTestAccessRecords.find(
+              record => record.mockTestId?._id?.toString() === payment.paymentForId?._id?.toString()
+            );
+            
+            return {
+              ...payment,
+              testAccessDetails: {
+                isCompleted: testAccess?.isCompleted || false,
+                purchaseDate: testAccess?.purchaseDate
+              }
+            };
+          }
+          
+          return payment;
+        });
+      } else {
+        // No transaction IDs found, return empty
+        payments = [];
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -360,6 +446,7 @@ export const getPaymentHistory = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to retrieve payment history",
+      error: err.message
     });
   }
 };
