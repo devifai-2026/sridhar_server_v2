@@ -10,8 +10,6 @@ export const createMockTest = async (req, res) => {
         const newMockTest = new MockTest({
             title,
             description,
-            category,
-            subject,
             mockTestType,
             isPaid,
             price,
@@ -113,9 +111,7 @@ export const GetAllMockTest = async (req, res) => {
         if (search) {
             const searchRegex = { $regex: search, $options: "i" };
             query.$or = [
-                { subject: searchRegex },
                 { description: searchRegex },
-                { category: searchRegex },
                 { title: searchRegex },
             ];
 
@@ -170,8 +166,6 @@ export const GetAllMockTest = async (req, res) => {
             $project: {
                 title: 1,
                 description: 1,
-                category: 1,
-                subject: 1,
                 mockTestType: 1,
                 isPaid: 1,
                 price: 1,
@@ -326,8 +320,6 @@ export const updateMockTestWithQuestions = async (req, res) => {
         const updateData = {
             title: mockTestData.title,
             description: mockTestData.description,
-            category: mockTestData.category,
-            subject: mockTestData.subject,
             mockTestType: mockTestData.mockTestType || mockTestData.testType,
             isPaid: mockTestData.isPaid !== undefined ? mockTestData.isPaid : mockTestData.testType === "paid",
             price: mockTestData.price || mockTestData.mockTestPrice || 0,

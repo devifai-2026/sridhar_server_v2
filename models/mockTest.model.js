@@ -8,8 +8,6 @@ const MockTestSchema = new Schema(
       required: true
     },
     description: String,
-    category: String,
-    subject: String,
     mockTestType: String,
     isPaid: {
       type: Boolean,
