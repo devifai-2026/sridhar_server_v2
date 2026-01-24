@@ -46,10 +46,6 @@ export const registerUser = async (req, res) => {
   }
 };
 
-
-
-
-
 // NOTE: 📝 ==========================
 // @desc   RESEND OTP
 // NOTE: 📝 ==========================
@@ -73,15 +69,18 @@ export const resendOtp = async (req, res) => {
     // Check if user already fully registered
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email already registered. Please login instead." });
+      return res
+        .status(400)
+        .json({ message: "Email already registered. Please login instead." });
     }
 
     // Find pending user
     const pendingUser = await PendingUser.findOne({ email });
-    
+
     if (!pendingUser) {
-      return res.status(404).json({ 
-        message: "No pending registration found for this email. Please register again." 
+      return res.status(404).json({
+        message:
+          "No pending registration found for this email. Please register again.",
       });
     }
 
@@ -92,16 +91,18 @@ export const resendOtp = async (req, res) => {
     const minResendInterval = 30000; // 30 seconds minimum interval
 
     if (timeSinceLastOtp < minResendInterval) {
-      const secondsLeft = Math.ceil((minResendInterval - timeSinceLastOtp) / 1000);
-      return res.status(429).json({ 
+      const secondsLeft = Math.ceil(
+        (minResendInterval - timeSinceLastOtp) / 1000,
+      );
+      return res.status(429).json({
         message: `Please wait ${secondsLeft} seconds before requesting another OTP`,
-        retryAfter: secondsLeft
+        retryAfter: secondsLeft,
       });
     }
 
     // Generate new OTP
     const newOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    
+
     // Update OTP and reset expiration
     pendingUser.otp = newOtp;
     pendingUser.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -128,28 +129,27 @@ export const resendOtp = async (req, res) => {
     });
 
     // Return success response
-    res.status(200).json({ 
+    res.status(200).json({
       message: "New OTP has been sent to your email",
       email: email,
-      expiresIn: "10 minutes"
+      expiresIn: "10 minutes",
     });
-
   } catch (error) {
     console.error("Resend OTP Error:", error);
-    
+
     // Handle specific errors
-    if (error.name === 'ValidationError') {
+    if (error.name === "ValidationError") {
       return res.status(400).json({ message: "Invalid data provided" });
     }
-    
+
     if (error.code === 11000) {
       return res.status(400).json({ message: "Duplicate entry error" });
     }
 
     // Generic error
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Failed to resend OTP. Please try again later.",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -158,13 +158,12 @@ export const resendOtp = async (req, res) => {
 // @desc   User Login
 // NOTE: 📝 =====================================
 
-
-
 export const loginUser = async (req, res) => {
   try {
     const { email, password, deviceId } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user.isActive) return res.status(404).json({ message: "User is inactive" });
 
     // Device ID check
     if (
@@ -179,7 +178,8 @@ export const loginUser = async (req, res) => {
 
       if (!deviceRequest) {
         return res.status(403).json({
-          message: "Unauthorized device access. Device ID does not match and no pending device change request found.",
+          message:
+            "Unauthorized device access. Device ID does not match and no pending device change request found.",
         });
       }
 
@@ -233,13 +233,14 @@ export const loginUser = async (req, res) => {
       accessToken,
       refreshToken,
       user: userObj,
-      deviceChangeRequestStatus: latestDeviceRequest ? latestDeviceRequest.status : null,
+      deviceChangeRequestStatus: latestDeviceRequest
+        ? latestDeviceRequest.status
+        : null,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 // NOTE: 📝 =====================================
 // @desc   Google Sign Up or Login
@@ -379,10 +380,10 @@ export const forgotPassword = async (req, res) => {
 
     const resetUrl = `https://sridhareducation.cloud/reset-password/${resetToken}`;
 
-await sendEmail({
-  to: user.email,
-  subject: "Reset your Sridhar Education LMS password",
-  html: `
+    await sendEmail({
+      to: user.email,
+      subject: "Reset your Sridhar Education LMS password",
+      html: `
     <div style="font-family: Arial, sans-serif; line-height: 1.6;">
       <h2>Password Reset Request</h2>
       <p>Hello,</p>
@@ -400,8 +401,7 @@ await sendEmail({
       <p>Thanks,<br/>Sridhar Education LMS Team</p>
     </div>
   `,
-});
-
+    });
 
     res.json({ message: "Password reset link sent to email" });
   } catch (error) {
