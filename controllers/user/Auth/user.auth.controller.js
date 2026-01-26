@@ -444,6 +444,9 @@ export const resetPassword = async (req, res) => {
 export const verifyOtpAndRegister = async (req, res) => {
   try {
     const { email, otp } = req.body;
+
+    console.log("Verifying OTP for email:", email, "with OTP:", otp);
+
     const pendingUser = await PendingUser.findOne({ email });
     if (!pendingUser)
       return res.status(404).json({ message: "No OTP found or expired" });
