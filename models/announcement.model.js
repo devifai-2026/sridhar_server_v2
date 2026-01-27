@@ -22,6 +22,9 @@ const announcementSchema = new mongoose.Schema(
     hyperlinkEnabled:{
       type: Boolean,
     },
+    hyperlinkURL:{
+      type: String,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",

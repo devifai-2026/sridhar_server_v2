@@ -213,41 +213,19 @@ export const getAllPaymentHistory = async (req, res) => {
         }
       },
 
-      // Build search conditions dynamically with null-safe checks
+      // Build search conditions dynamically - FIXED
       ...(search ? [
         {
           $match: {
             $or: [
-              // Search in user fields - handle null/undefined
-              { 
-                $or: [
-                  { "safeUserDetails.email": { $regex: search, $options: "i" } },
-                  { "safeUserDetails.phone": { $regex: search, $options: "i" } },
-                  { "safeUserDetails.fullName": { $regex: search, $options: "i" } }
-                ]
-              },
+              // Search in user fields
+              { "safeUserDetails.email": { $regex: search, $options: "i" } },
+              { "safeUserDetails.phone": { $regex: search, $options: "i" } },
+              { "safeUserDetails.fullName": { $regex: search, $options: "i" } },
               // Search in item details based on payment type
-              {
-                $cond: [
-                  { $eq: ["$paymentType", "test"] },
-                  { "testDetails.title": { $regex: search, $options: "i" } },
-                  false
-                ]
-              },
-              {
-                $cond: [
-                  { $eq: ["$paymentType", "course"] },
-                  { "courseDetails.name": { $regex: search, $options: "i" } },
-                  false
-                ]
-              },
-              {
-                $cond: [
-                  { $eq: ["$paymentType", "subject"] },
-                  { "subjectDetails.name": { $regex: search, $options: "i" } },
-                  false
-                ]
-              },
+              { paymentType: "test", "testDetails.title": { $regex: search, $options: "i" } },
+              { paymentType: "course", "courseDetails.name": { $regex: search, $options: "i" } },
+              { paymentType: "subject", "subjectDetails.name": { $regex: search, $options: "i" } },
               // Search in transaction ID
               { transactionId: { $regex: search, $options: "i" } }
             ]
@@ -358,7 +336,33 @@ export const getAllPaymentHistory = async (req, res) => {
       },
       { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
 
-      // Add safe user fields for count pipeline too
+      // Add lookups for count pipeline
+      {
+        $lookup: {
+          from: "mocktests",
+          localField: "paymentForId",
+          foreignField: "_id",
+          as: "mockTestDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "courses",
+          localField: "paymentForId",
+          foreignField: "_id",
+          as: "courseDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "subjects",
+          localField: "paymentForId",
+          foreignField: "_id",
+          as: "subjectDetails",
+        },
+      },
+
+      // Add safe user fields for count pipeline
       {
         $addFields: {
           safeUserDetails: {
@@ -373,22 +377,42 @@ export const getAllPaymentHistory = async (req, res) => {
                 { $ifNull: ["$userDetails.lastName", ""] }
               ]
             }
+          },
+          testDetails: {
+            $cond: [
+              { $eq: ["$paymentType", "test"] },
+              { $arrayElemAt: ["$mockTestDetails", 0] },
+              null
+            ]
+          },
+          courseDetails: {
+            $cond: [
+              { $eq: ["$paymentType", "course"] },
+              { $arrayElemAt: ["$courseDetails", 0] },
+              null
+            ]
+          },
+          subjectDetails: {
+            $cond: [
+              { $eq: ["$paymentType", "subject"] },
+              { $arrayElemAt: ["$subjectDetails", 0] },
+              null
+            ]
           }
         }
       },
 
-      // Apply search filter if present
+      // Apply search filter if present - FIXED
       ...(search ? [
         {
           $match: {
             $or: [
-              { 
-                $or: [
-                  { "safeUserDetails.email": { $regex: search, $options: "i" } },
-                  { "safeUserDetails.phone": { $regex: search, $options: "i" } },
-                  { "safeUserDetails.fullName": { $regex: search, $options: "i" } }
-                ]
-              },
+              { "safeUserDetails.email": { $regex: search, $options: "i" } },
+              { "safeUserDetails.phone": { $regex: search, $options: "i" } },
+              { "safeUserDetails.fullName": { $regex: search, $options: "i" } },
+              { paymentType: "test", "testDetails.title": { $regex: search, $options: "i" } },
+              { paymentType: "course", "courseDetails.name": { $regex: search, $options: "i" } },
+              { paymentType: "subject", "subjectDetails.name": { $regex: search, $options: "i" } },
               { transactionId: { $regex: search, $options: "i" } }
             ]
           }
@@ -458,35 +482,27 @@ export const userSummary = async (req, res) => {
 
     if (filter === "today") {
       const start = new Date();
-      start.setHours(0, 0, 0, 0);
+      start.setUTCHours(0, 0, 0, 0);
       const end = new Date();
-      end.setHours(23, 59, 59, 999);
+      end.setUTCHours(23, 59, 59, 999);
       userMatch.createdAt = { $gte: start, $lte: end };
     } else if (filter === "week") {
       const now = new Date();
       const first = now.getDate() - now.getDay();
       const start = new Date(now.setDate(first));
-      start.setHours(0, 0, 0, 0);
+      start.setUTCHours(0, 0, 0, 0);
       const end = new Date();
-      end.setHours(23, 59, 59, 999);
+      end.setUTCHours(23, 59, 59, 999);
       userMatch.createdAt = { $gte: start, $lte: end };
     } else if (filter === "month") {
       const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-        999
-      );
+      const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
       userMatch.createdAt = { $gte: start, $lte: end };
     } else if (filter === "year") {
       const now = new Date();
-      const start = new Date(now.getFullYear(), 0, 1);
-      const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+      const start = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+      const end = new Date(Date.UTC(now.getUTCFullYear(), 11, 31, 23, 59, 59, 999));
       userMatch.createdAt = { $gte: start, $lte: end };
     } else if (filter === "custom" && from && to) {
       userMatch.createdAt = { $gte: new Date(from), $lte: new Date(to) };

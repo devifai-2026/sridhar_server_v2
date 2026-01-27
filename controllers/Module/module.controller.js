@@ -97,27 +97,27 @@ export const getAllModules = async (req, res) => {
     // Filter by date range (same as before)
     if (filter === "today") {
       const start = new Date();
-      start.setHours(0, 0, 0, 0);
+      start.setUTCHours(0, 0, 0, 0);
       const end = new Date();
-      end.setHours(23, 59, 59, 999);
+      end.setUTCHours(23, 59, 59, 999);
       query.createdAt = { $gte: start, $lte: end };
     } else if (filter === "week") {
       const now = new Date();
       const first = now.getDate() - now.getDay();
       const start = new Date(now.setDate(first));
-      start.setHours(0, 0, 0, 0);
+      start.setUTCHours(0, 0, 0, 0);
       const end = new Date();
-      end.setHours(23, 59, 59, 999);
+      end.setUTCHours(23, 59, 59, 999);
       query.createdAt = { $gte: start, $lte: end };
     } else if (filter === "month") {
       const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
       query.createdAt = { $gte: start, $lte: end };
     } else if (filter === "year") {
       const now = new Date();
-      const start = new Date(now.getFullYear(), 0, 1);
-      const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+       const start = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+      const end = new Date(Date.UTC(now.getUTCFullYear(), 11, 31, 23, 59, 59, 999));
       query.createdAt = { $gte: start, $lte: end };
     } else if (filter === "custom" && from && to) {
       query.createdAt = { $gte: new Date(from), $lte: new Date(to) };

@@ -4,7 +4,7 @@ import Announcement from "../../../models/announcement.model.js";
 // 1. Create Announcement
 export const createAnnouncement = async (req, res) => {
   try {
-    const { tag, header, description, imageURL, createdBy, status,hyperlinkEnabled } = req.body;
+    const { tag, header, description, imageURL, createdBy, status,hyperlinkEnabled,  hyperlinkURL } = req.body;
 
     const announcement = new Announcement({
       tag,
@@ -13,7 +13,8 @@ export const createAnnouncement = async (req, res) => {
       imageURL,
       createdBy,
       status,
-      hyperlinkEnabled
+      hyperlinkEnabled,
+      hyperlinkURL
     });
 
     await announcement.save();
@@ -27,7 +28,7 @@ export const createAnnouncement = async (req, res) => {
 export const getAllAnnouncements = async (req, res) => {
   try {
     const announcements = await Announcement.find({ status: "active" })
-      .select("tag header description _id imageURL status")
+      .select("tag header description _id imageURL status hyperlinkEnabled hyperlinkURL")
       .sort({ createdAt: -1 });
 
     res.status(200).json(announcements);
@@ -60,11 +61,11 @@ export const getAnnouncementById = async (req, res) => {
 export const updateAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
-    const { tag, header, description, imageURL, status } = req.body;
+    const { tag, header, description, imageURL, status ,hyperlinkEnabled, hyperlinkURL } = req.body;
 
     const updated = await Announcement.findByIdAndUpdate(
       id,
-      { tag, header, description, imageURL, status },
+      { tag, header, description, imageURL, status, hyperlinkEnabled, hyperlinkURL },
       { new: true }
     );
 
