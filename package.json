@@ -31,7 +31,8 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.5",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "razorpay": "^2.9.6"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

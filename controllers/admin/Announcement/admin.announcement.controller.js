@@ -11,10 +11,10 @@ export const createAnnouncement = async (req, res) => {
       header,
       description,
       imageURL,
-      createdBy,
+      ...(createdBy && { createdBy }),
       status,
       hyperlinkEnabled,
-      hyperlinkURL
+      hyperlinkURL,
     });
 
     await announcement.save();

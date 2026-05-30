@@ -31,17 +31,17 @@ const userSchema = new mongoose.Schema(
     },
     firstName: {
       type: String,
-      required: true,
+      default: null,
       trim: true,
     },
     lastName: {
       type: String,
-      required: true,
+      default: null,
       trim: true,
     },
     phone: {
       type: String,
-      required: true,
+      default: null,
     },
     isActive:{
       type: Boolean,

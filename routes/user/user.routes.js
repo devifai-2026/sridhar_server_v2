@@ -27,7 +27,6 @@ import {
 } from "../../controllers/user/Courses/user.courses.controller.js";
 import { getAttemptedTests, getResultByUserAndTest, getResultsByUserId, getUserTestStats, saveTestResult } from "../../controllers/MockTest/mockTestResultSubmission.controller.js";
 import { checkIfPurchased, getMockTestAccess } from "../../controllers/user/purchased/verifyCoursePurchase.js";
-import { getPaymentHistory } from "../../controllers/user/payment/payment.controller.js";
 
 // Fix __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -88,8 +87,6 @@ router.post("/get/attempted/testids", getAttemptedTests);
 //verify resource purchase
 router.get("/isPurchased/:courseId/:userId", checkIfPurchased);
 router.get("/isPurchasedTests/:userId", getMockTestAccess);
-
-router.get('/history/:userId/:paymentForId?', getPaymentHistory);
 
 
 

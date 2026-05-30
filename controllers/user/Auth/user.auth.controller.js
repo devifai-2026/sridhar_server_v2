@@ -105,7 +105,7 @@ export const resendOtp = async (req, res) => {
 
     // Update OTP and reset expiration
     pendingUser.otp = newOtp;
-    pendingUser.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    pendingUser.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     pendingUser.otpAttempts = 0; // Reset attempts if needed
     await pendingUser.save();
 
@@ -445,19 +445,21 @@ export const verifyOtpAndRegister = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    console.log("Verifying OTP for email:", email, "with OTP:", otp);
-
     const pendingUser = await PendingUser.findOne({ email });
     if (!pendingUser)
       return res.status(404).json({ message: "No OTP found or expired" });
 
-    if (pendingUser.otp !== otp)
-      return res.status(400).json({ message: "Invalid OTP" });
+    console.log("📩 Received OTP:", JSON.stringify(otp), "| type:", typeof otp);
+    console.log("💾 Stored OTP:  ", JSON.stringify(pendingUser.otp), "| type:", typeof pendingUser.otp);
+    console.log("🕐 Expires at:", pendingUser.expiresAt, "| Now:", new Date());
 
     if (pendingUser.expiresAt < Date.now()) {
       await PendingUser.deleteOne({ email });
       return res.status(400).json({ message: "OTP expired" });
     }
+
+    if (pendingUser.otp.trim() !== String(otp).trim())
+      return res.status(400).json({ message: "Invalid OTP" });
 
     const user = new User({
       email,
