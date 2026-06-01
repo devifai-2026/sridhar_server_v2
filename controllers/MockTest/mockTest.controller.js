@@ -18,8 +18,8 @@ export const createMockTest = async (req, res) => {
             totalQuestions,
             durationMinutes,
             questionIds,
-            createdBy,
-            isActive
+            ...(createdBy && { createdBy }),
+            isActive,
         });
 
         const savedMockTest = await newMockTest.save();

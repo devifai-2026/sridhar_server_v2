@@ -217,7 +217,9 @@ export const getResultByUserAndTest = async (req, res) => {
       userId,
       testId,
       isActive: true
-    }).populate('testId', 'title category subject mockTestType totalQuestions durationMinutes');
+    })
+      .sort({ createdAt: -1 })
+      .populate('testId', 'title category subject mockTestType totalQuestions durationMinutes');
 
     if (!result) {
       return res.status(404).json({

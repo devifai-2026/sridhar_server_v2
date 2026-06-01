@@ -28,7 +28,7 @@ const MockTestSchema = new Schema(
       type: Types.ObjectId,
       ref: "MockTestQuestion",
     }],
-    createdBy: { type: Types.ObjectId, required: true, ref: "Admin" },
+    createdBy: { type: Types.ObjectId, ref: "Admin" },
     isActive: { type: Boolean, required: true, default: true },
   },
   { timestamps: true }
