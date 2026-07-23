@@ -27,11 +27,16 @@ import {
 } from "../../controllers/user/Courses/user.courses.controller.js";
 import { getAttemptedTests, getResultByUserAndTest, getResultsByUserId, getUserTestStats, saveTestResult } from "../../controllers/MockTest/mockTestResultSubmission.controller.js";
 import { checkIfPurchased, getMockTestAccess } from "../../controllers/user/purchased/verifyCoursePurchase.js";
+import { checkActiveUser } from "../../middleware/checkActiveUser.js";
 
 // Fix __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const router = express.Router();
+
+// Blocks any authenticated request from a deactivated account so the
+// app can detect it and force a logout. No-op for unauthenticated calls.
+router.use(checkActiveUser);
 
 // POST /api/users
 router.post("/signup", registerUser); // Step 1: send OTP
@@ -49,6 +54,10 @@ router.get("/reset-password/:token", (req, res) => {
 });
 
 router.post("/request-device-change", raiseDeviceChangeRequest);
+
+// Lightweight heartbeat the app polls periodically while logged in, purely
+// so checkActiveUser can catch a deactivated/deleted account promptly.
+router.get("/ping", (req, res) => res.json({ success: true }));
 
 // NOTE: 📝 This is Banner Carousel Routes
 

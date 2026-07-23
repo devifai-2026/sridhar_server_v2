@@ -7,8 +7,11 @@ import {
   updateCourseAccess,
   deleteCourseAccess
 } from "../../controllers/user/courseAccess/courseAccessController.js";
+import { checkActiveUser } from "../../middleware/checkActiveUser.js";
 
 const router = express.Router();
+
+router.use(checkActiveUser);
 
 router.post("/", createCourseAccess);
 router.get("/user/:userId", getCourseAccessByUser);

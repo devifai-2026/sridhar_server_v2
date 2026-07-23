@@ -330,6 +330,13 @@ export const refreshAccessToken = async (req, res) => {
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        code: "USER_DEACTIVATED",
+        message: "Your account has been deactivated.",
+      });
+    }
 
     // Generate new access & refresh tokens
     const newAccessToken = jwt.sign({ id: user._id }, config.jwtSecret, {
