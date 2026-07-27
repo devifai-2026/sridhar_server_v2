@@ -99,6 +99,7 @@ export const GetAllMockTest = async (req, res) => {
         const from = req.query.from;
         const to = req.query.to;
         const isPaid = req.query.isPaid;
+        const isActive = req.query.isActive;
 
         // Build the query object for MockTest filtering
 
@@ -106,6 +107,10 @@ export const GetAllMockTest = async (req, res) => {
 
         if (isPaid !== undefined) {
             query.isPaid = isPaid === "true";
+        }
+
+        if (isActive !== undefined) {
+            query.isActive = isActive === "true";
         }
 
         if (search) {
@@ -200,6 +205,37 @@ export const GetAllMockTest = async (req, res) => {
     }
 };
 
+
+export const updateMockTestStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isActive } = req.body;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid MockTest ID" });
+        }
+        if (typeof isActive !== "boolean") {
+            return res.status(400).json({ message: "isActive must be a boolean" });
+        }
+
+        const mockTest = await MockTest.findByIdAndUpdate(
+            id,
+            { isActive },
+            { new: true }
+        );
+
+        if (!mockTest) {
+            return res.status(404).json({ message: "MockTest not found" });
+        }
+
+        return res.status(200).json({
+            message: `Mock test ${isActive ? "enabled" : "disabled"} successfully`,
+            mockTest,
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
 
 export const DeleteMocket = async (req, res) => {
     try {

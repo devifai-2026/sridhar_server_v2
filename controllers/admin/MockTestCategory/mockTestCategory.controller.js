@@ -97,12 +97,17 @@ export const getAllMockTestCategories = async (req, res) => {
     const from = req.query.from;
     const to = req.query.to;
     const isPaid = req.query.isPaid;
+    const isActive = req.query.isActive;
 
     // Build the query object for MocktestCategory filtering
     let query = {};
 
     if (isPaid !== undefined) {
       query.price = isPaid === "true" ? { $gt: 0 } : 0;
+    }
+
+    if (isActive !== undefined) {
+      query.isActive = isActive === "true";
     }
 
     if (search) {
@@ -214,10 +219,11 @@ export const getMockTestCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const category = await MocktestCategory.findById(id).populate(
-      "mocktestIds",
-      "title"
-    );
+    const category = await MocktestCategory.findById(id).populate({
+      path: "mocktestIds",
+      select: "title",
+      match: { isActive: true },
+    });
 
     if (!category) {
       return res.status(404).json({

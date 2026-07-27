@@ -67,7 +67,7 @@ import {
 import { get } from "mongoose";
 import { getAllDeviceChangeRequests, handleDeviceRequest } from "../../controllers/DeviceChangeRequest/deviceChange.controller.js"
 
-import { createMockTest, createMockTestQuestion, GetAllMockTest, DeleteMocket, updateMockTestWithQuestions , GetMockTestById, getAllQuestions, getMockTestHistory, getTestResultById, getUserTestStatistics,allMockTests } from "../../controllers/MockTest/mockTest.controller.js";
+import { createMockTest, createMockTestQuestion, GetAllMockTest, DeleteMocket, updateMockTestWithQuestions , GetMockTestById, getAllQuestions, getMockTestHistory, getTestResultById, getUserTestStatistics,allMockTests, updateMockTestStatus } from "../../controllers/MockTest/mockTest.controller.js";
 
 import { createPayment, getAllPaymentHistory, userSummary,deleteUser,toggleUserStatus } from "../../controllers/Payment/payment.controller.js"
 
@@ -214,6 +214,7 @@ router.post("/createMockTestQuestion", createMockTestQuestion)
 router.get("/get/all/mockTest", GetAllMockTest);
 router.delete("/delete/mockTest/:id", DeleteMocket);
 router.put("/mocktests/:testId", updateMockTestWithQuestions);
+router.patch("/mocktests/:id/status", updateMockTestStatus);
 router.get("/get/mockTestById/:id", GetMockTestById);
 router.post("/get/mockTestQuestionsById", getAllQuestions);
 router.get("/all/mockTests", allMockTests);
