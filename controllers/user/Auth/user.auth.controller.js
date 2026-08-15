@@ -7,6 +7,10 @@ import { sendEmail } from "../../../utils/sendEmail.js";
 import PendingUser from "../../../models/pendingUser.model.js";
 import DeviceChangeRequest from "../../../models/deviceChangeRequest.model.js"; // adjust path
 
+// Demo/showcase account — logs in from any device without the device-change flow.
+// Used for product demos where multiple people may need to log in at once.
+const DEMO_ACCOUNT_EMAIL = "sayanpal2469@gmail.com";
+
 // NOTE: 📝 ==========================
 // @desc   Register new user
 // NOTE: 📝 ==========================
@@ -165,10 +169,13 @@ export const loginUser = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!user.isActive) return res.status(404).json({ message: "User is inactive" });
 
-    // Device ID check
+    const isDemoAccount = user.email.trim().toLowerCase() === DEMO_ACCOUNT_EMAIL;
+
+    // Device ID check (skipped for the demo account)
     if (
-      !user.deviceId ||
-      user.deviceId.trim().toLowerCase() !== deviceId.trim().toLowerCase()
+      !isDemoAccount &&
+      (!user.deviceId ||
+        user.deviceId.trim().toLowerCase() !== deviceId.trim().toLowerCase())
     ) {
       // Lookup the device change request for approval status
       const deviceRequest = await DeviceChangeRequest.findOne({
