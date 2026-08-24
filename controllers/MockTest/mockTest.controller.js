@@ -2,14 +2,16 @@ import MockTest from "../../models/mockTest.model.js";
 import MockeTestQuestion from "../../models/mockTestQuestion.model.js"
 import mongoose from "mongoose";
 import MockTestResult from "../../models/testResult.model.js";
+import MockTestAccess from "../../models/mockTestAccess.js";
 
 
 export const createMockTest = async (req, res) => {
     try {
-        const { title, description, category, subject, mockTestType, isPaid, price, requiresCode, validCodes, totalQuestions, durationMinutes, questionIds, createdBy, isActive } = req.body;
+        const { title, description, subject, mockTestType, isPaid, price, requiresCode, validCodes, totalQuestions, durationMinutes, questionIds, createdBy, isActive, expiryDate } = req.body;
         const newMockTest = new MockTest({
             title,
             description,
+            subject,
             mockTestType,
             isPaid,
             price,
@@ -20,6 +22,7 @@ export const createMockTest = async (req, res) => {
             questionIds,
             ...(createdBy && { createdBy }),
             isActive,
+            expiryDate,
         });
 
         const savedMockTest = await newMockTest.save();
@@ -356,6 +359,7 @@ export const updateMockTestWithQuestions = async (req, res) => {
         const updateData = {
             title: mockTestData.title,
             description: mockTestData.description,
+            subject: mockTestData.subject,
             mockTestType: mockTestData.mockTestType || mockTestData.testType,
             isPaid: mockTestData.isPaid !== undefined ? mockTestData.isPaid : mockTestData.testType === "paid",
             price: mockTestData.price || mockTestData.mockTestPrice || 0,
@@ -368,6 +372,7 @@ export const updateMockTestWithQuestions = async (req, res) => {
             durationMinutes: mockTestData.durationMinutes || mockTestData.totalMinutes || 0,
             createdBy: mockTestData.createdBy || mockTestData.userId || null,
             isActive: mockTestData.isActive !== undefined ? mockTestData.isActive : true,
+            expiryDate: mockTestData.expiryDate || null,
         };
 
         if (questionIds.length > 0) {
@@ -821,7 +826,7 @@ export const getTestResultById = async (req, res) => {
     const result = await MockTestResult.findById(id)
       .populate('userId', 'email phone firstName lastName')
       .populate('testId', 'title description totalMarks duration passingMarks totalQuestions')
-      .populate('questionWiseResults.questionId', 'questionText options correctOption');
+      .populate('questionWiseResults.questionId', 'questionText questionImage solutionImage options correctOption');
 
     if (!result) {
       return res.status(404).json({
@@ -866,11 +871,13 @@ export const getTestResultById = async (req, res) => {
       questionWiseResults: result.questionWiseResults.map(q => ({
         questionId: q.questionId._id,
         questionText: q.questionText || q.questionId.questionText,
+        questionImage: q.questionImage || q.questionId.questionImage || null,
+        solutionImage: q.solutionImage || q.questionId.solutionImage || null,
         selectedOption: q.selectedOption,
         correctOption: q.correctOption,
         timeSpent: q.timeSpent,
         isCorrect: q.isCorrect,
-        options: q.options,
+        options: q.options && q.options.length > 0 ? q.options : q.questionId.options,
         status: q.isCorrect ? 'correct' : q.selectedOption !== undefined ? 'wrong' : 'unattempted'
       })),
       submittedAt: result.submittedAt,
@@ -993,6 +1000,37 @@ export const getUserTestStatistics = async (req, res) => {
   }
 };
 
+
+// Reset a user's attempt for a mock test so they can retake it
+export const resetMockTestAttempt = async (req, res) => {
+    try {
+        const { userId, testId } = req.body;
+
+        if (!userId || !testId) {
+            return res.status(400).json({ success: false, message: "userId and testId are required" });
+        }
+        if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(testId)) {
+            return res.status(400).json({ success: false, message: "Invalid userId or testId" });
+        }
+
+        // Paid tests: clear the completed flag so the app allows a retake without repurchasing
+        await MockTestAccess.updateMany(
+            { userId, mockTestId: testId },
+            { $set: { isCompleted: false }, $unset: { testResultId: "" } }
+        );
+
+        // Free tests: hide prior results so they no longer count as "attempted"
+        await MockTestResult.updateMany(
+            { userId, testId },
+            { $set: { isActive: false } }
+        );
+
+        return res.status(200).json({ success: true, message: "Attempt reset successfully. The user can retake this test." });
+    } catch (error) {
+        console.error("Error resetting mock test attempt:", error);
+        res.status(500).json({ success: false, message: "Server error while resetting attempt", error: error.message });
+    }
+};
 
 export const allMockTests = async (req, res) => {
     try {

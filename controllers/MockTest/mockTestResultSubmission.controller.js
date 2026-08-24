@@ -63,6 +63,8 @@ export const saveTestResult = async (req, res) => {
       return {
         questionId: question._id,
         questionText: question.questionText,
+        questionImage: question.questionImage || null,
+        solutionImage: question.solutionImage || null,
         selectedOption: selectedOption,
         correctOption: question.correctAnswerIndex,
         timeSpent: questionWiseTime?.[index]?.timeSpent || 0,

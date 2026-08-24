@@ -8,6 +8,7 @@ const MockTestSchema = new Schema(
       required: true
     },
     description: String,
+    subject: String,
     mockTestType: String,
     isPaid: {
       type: Boolean,
@@ -30,6 +31,7 @@ const MockTestSchema = new Schema(
     }],
     createdBy: { type: Types.ObjectId, ref: "Admin" },
     isActive: { type: Boolean, required: true, default: true },
+    expiryDate: Date,
   },
   { timestamps: true }
 );

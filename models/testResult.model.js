@@ -46,6 +46,8 @@ const mockTestResultSchema = new mongoose.Schema({
       required: true
     },
     questionText: String,
+    questionImage: String,
+    solutionImage: String,
     selectedOption: Number, // index of selected option (0,1,2,3)
     correctOption: Number, // index of correct option (0,1,2,3)
     timeSpent: Number, // in seconds

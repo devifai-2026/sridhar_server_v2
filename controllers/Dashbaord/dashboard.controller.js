@@ -2,24 +2,46 @@ import User from "../../models/user.model.js";
 import Course from "../../models/course.model.js"
 import Payment from "../../models/payment.model.js";
 import MockTest from "../../models/mockTest.model.js"
+import MockTestResult from "../../models/testResult.model.js";
 
 export const getDashboardStats = async (req, res) => {
     try {
-        const totalUsers = await User.countDocuments();
-        const totalCourses = await Course.countDocuments({ isActive: true });
-        const totalPaymentsAmountAgg = await Payment.aggregate([
-            { $match: { status: "success"} },
-            { $group: { _id: null, totalAmount: { $sum: "$amount" } } }
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+        const [
+            totalUsers,
+            activeUsers,
+            newUsersThisWeek,
+            totalCourses,
+            totalPaymentsAmountAgg,
+            totalMockTests,
+            totalMockTestAttempts,
+            pendingPaymentsCount,
+        ] = await Promise.all([
+            User.countDocuments(),
+            User.countDocuments({ isActive: true }),
+            User.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+            Course.countDocuments({ isActive: true }),
+            Payment.aggregate([
+                { $match: { status: "success" } },
+                { $group: { _id: null, totalAmount: { $sum: "$amount" } } }
+            ]),
+            MockTest.countDocuments({ isActive: true }),
+            MockTestResult.countDocuments({ isActive: true }),
+            Payment.countDocuments({ status: "pending" }),
         ]);
-        const totalMockTests = await MockTest.countDocuments({ isActive: true });
 
         const totalPaymentsAmount = totalPaymentsAmountAgg[0]?.totalAmount || 0;
 
         res.status(200).json({
             totalUsers,
+            activeUsers,
+            newUsersThisWeek,
             totalCourses,
             totalPaymentsAmount,
-            totalMockTests
+            totalMockTests,
+            totalMockTestAttempts,
+            pendingPaymentsCount,
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

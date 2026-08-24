@@ -1,5 +1,9 @@
 import Payment from "../../models/payment.model.js";
 import User from "../../models/user.model.js";
+import Course from "../../models/course.model.js";
+import CourseAccess from "../../models/courseAccess.model.js";
+import MockTest from "../../models/mockTest.model.js";
+import MockTestAccess from "../../models/mockTestAccess.js";
 import mongoose from "mongoose";
 import crypto from "crypto";
 
@@ -69,6 +73,12 @@ export const getAllPaymentHistory = async (req, res) => {
     const filter = req.query.filter || "";
     const from = req.query.from;
     const to = req.query.to;
+    const paymentType = req.query.paymentType || "";
+    const status = req.query.status || "";
+
+    const typeStatusMatch = {};
+    if (paymentType) typeStatusMatch.paymentType = paymentType;
+    if (status) typeStatusMatch.status = status;
 
     // Build date filter based on filter query param
     let dateFilter = {};
@@ -98,6 +108,7 @@ export const getAllPaymentHistory = async (req, res) => {
 
     // Construct aggregation pipeline with dynamic lookups based on paymentType
     const pipeline = [
+      ...(Object.keys(typeStatusMatch).length > 0 ? [{ $match: typeStatusMatch }] : []),
       {
         $lookup: {
           from: "users",
@@ -135,6 +146,16 @@ export const getAllPaymentHistory = async (req, res) => {
           localField: "paymentForId",
           foreignField: "_id",
           as: "subjectDetails",
+        },
+      },
+
+      // Conditional lookup for mock test category (bundle) payments
+      {
+        $lookup: {
+          from: "mocktestcategories",
+          localField: "paymentForId",
+          foreignField: "_id",
+          as: "categoryDetails",
         },
       },
 
@@ -202,6 +223,14 @@ export const getAllPaymentHistory = async (req, res) => {
               null
             ]
           },
+          // For mock test category (bundle) payments, use categoryDetails
+          categoryDetails: {
+            $cond: [
+              { $eq: ["$paymentType", "category"] },
+              { $arrayElemAt: ["$categoryDetails", 0] },
+              null
+            ]
+          },
           // Get course access details (startDate and endDate)
           courseAccess: {
             $cond: [
@@ -226,6 +255,7 @@ export const getAllPaymentHistory = async (req, res) => {
               { paymentType: "test", "testDetails.title": { $regex: search, $options: "i" } },
               { paymentType: "course", "courseDetails.name": { $regex: search, $options: "i" } },
               { paymentType: "subject", "subjectDetails.name": { $regex: search, $options: "i" } },
+              { paymentType: "category", "categoryDetails.name": { $regex: search, $options: "i" } },
               // Search in transaction ID
               { transactionId: { $regex: search, $options: "i" } }
             ]
@@ -305,9 +335,16 @@ export const getAllPaymentHistory = async (req, res) => {
                     type: "Subject",
                     name: { $ifNull: ["$subjectDetails.name", "N/A"] },
                   }
+                },
+                {
+                  case: { $eq: ["$paymentType", "category"] },
+                  then: {
+                    type: "Mock Test Category",
+                    name: { $ifNull: ["$categoryDetails.name", "N/A"] },
+                  }
                 }
               ],
-              default: { 
+              default: {
                 type: "Unknown",
                 name: "N/A"
               }
@@ -326,6 +363,7 @@ export const getAllPaymentHistory = async (req, res) => {
 
     // Get total count without pagination stages for accurate total
     const countPipeline = [
+      ...(Object.keys(typeStatusMatch).length > 0 ? [{ $match: typeStatusMatch }] : []),
       {
         $lookup: {
           from: "users",
@@ -359,6 +397,14 @@ export const getAllPaymentHistory = async (req, res) => {
           localField: "paymentForId",
           foreignField: "_id",
           as: "subjectDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "mocktestcategories",
+          localField: "paymentForId",
+          foreignField: "_id",
+          as: "categoryDetails",
         },
       },
 
@@ -398,6 +444,13 @@ export const getAllPaymentHistory = async (req, res) => {
               { $arrayElemAt: ["$subjectDetails", 0] },
               null
             ]
+          },
+          categoryDetails: {
+            $cond: [
+              { $eq: ["$paymentType", "category"] },
+              { $arrayElemAt: ["$categoryDetails", 0] },
+              null
+            ]
           }
         }
       },
@@ -413,6 +466,7 @@ export const getAllPaymentHistory = async (req, res) => {
               { paymentType: "test", "testDetails.title": { $regex: search, $options: "i" } },
               { paymentType: "course", "courseDetails.name": { $regex: search, $options: "i" } },
               { paymentType: "subject", "subjectDetails.name": { $regex: search, $options: "i" } },
+              { paymentType: "category", "categoryDetails.name": { $regex: search, $options: "i" } },
               { transactionId: { $regex: search, $options: "i" } }
             ]
           }
@@ -451,6 +505,129 @@ export const getAllPaymentHistory = async (req, res) => {
       message: "Internal Server Error",
       error: error.message 
     });
+  }
+};
+
+// =============================
+// ADMIN: RECORD A MANUAL PAYMENT (cash/offline) AND GRANT ACCESS IMMEDIATELY
+// =============================
+export const createManualPayment = async (req, res) => {
+  try {
+    const { userId, paymentType, paymentForId, amount } = req.body;
+
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid or missing userId" });
+    }
+    if (!["course", "test"].includes(paymentType)) {
+      return res.status(400).json({ success: false, message: "paymentType must be 'course' or 'test'" });
+    }
+    if (!paymentForId || !mongoose.Types.ObjectId.isValid(paymentForId)) {
+      return res.status(400).json({ success: false, message: "Invalid or missing paymentForId" });
+    }
+    const parsedAmount = Number(amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid amount" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    let itemName = null;
+
+    if (paymentType === "course") {
+      const course = await Course.findById(paymentForId);
+      if (!course) return res.status(404).json({ success: false, message: "Course not found" });
+      itemName = course.name;
+    } else {
+      const mockTest = await MockTest.findById(paymentForId);
+      if (!mockTest) return res.status(404).json({ success: false, message: "Mock test not found" });
+      itemName = mockTest.title;
+    }
+
+    const transactionId = `MANUAL-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+
+    const payment = await Payment.create({
+      userId,
+      paymentType,
+      paymentForId,
+      itemName,
+      amount: parsedAmount,
+      transactionId,
+      status: "success",
+      paymentGateway: "manual",
+    });
+
+    // Grant access immediately, mirroring the online-purchase verifyPayment flow
+    if (paymentType === "course") {
+      const course = await Course.findById(paymentForId);
+      const months = course?.duration || 12;
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + months);
+      await CourseAccess.create({
+        userId,
+        courseId: paymentForId,
+        startDate,
+        endDate,
+      });
+    } else {
+      await MockTestAccess.create({
+        userId,
+        mockTestId: paymentForId,
+        isCompleted: false,
+        transactionId,
+        purchaseDate: new Date(),
+        purchasedVia: "individual",
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Manual payment recorded and access granted",
+      payment,
+    });
+  } catch (error) {
+    console.error("createManualPayment error:", error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+// =============================
+// ADMIN: PAYMENT SUMMARY STATS (for Payment History dashboard cards)
+// =============================
+export const getPaymentSummary = async (req, res) => {
+  try {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [totals, thisMonth, byType] = await Promise.all([
+      Payment.aggregate([
+        { $match: { status: "success" } },
+        { $group: { _id: null, totalAmount: { $sum: "$amount" }, totalCount: { $sum: 1 } } },
+      ]),
+      Payment.aggregate([
+        { $match: { status: "success", createdAt: { $gte: monthStart } } },
+        { $group: { _id: null, amount: { $sum: "$amount" }, count: { $sum: 1 } } },
+      ]),
+      Payment.aggregate([
+        { $match: { status: "success" } },
+        { $group: { _id: "$paymentType", amount: { $sum: "$amount" }, count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalAmount: totals[0]?.totalAmount || 0,
+        totalCount: totals[0]?.totalCount || 0,
+        thisMonthAmount: thisMonth[0]?.amount || 0,
+        thisMonthCount: thisMonth[0]?.count || 0,
+        byType: byType.map((t) => ({ paymentType: t._id, amount: t.amount, count: t.count })),
+      },
+    });
+  } catch (error) {
+    console.error("getPaymentSummary error:", error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
 

@@ -67,9 +67,9 @@ import {
 import { get } from "mongoose";
 import { getAllDeviceChangeRequests, handleDeviceRequest } from "../../controllers/DeviceChangeRequest/deviceChange.controller.js"
 
-import { createMockTest, createMockTestQuestion, GetAllMockTest, DeleteMocket, updateMockTestWithQuestions , GetMockTestById, getAllQuestions, getMockTestHistory, getTestResultById, getUserTestStatistics,allMockTests, updateMockTestStatus } from "../../controllers/MockTest/mockTest.controller.js";
+import { createMockTest, createMockTestQuestion, GetAllMockTest, DeleteMocket, updateMockTestWithQuestions , GetMockTestById, getAllQuestions, getMockTestHistory, getTestResultById, getUserTestStatistics,allMockTests, updateMockTestStatus, resetMockTestAttempt } from "../../controllers/MockTest/mockTest.controller.js";
 
-import { createPayment, getAllPaymentHistory, userSummary,deleteUser,toggleUserStatus } from "../../controllers/Payment/payment.controller.js"
+import { createPayment, getAllPaymentHistory, userSummary,deleteUser,toggleUserStatus, createManualPayment, getPaymentSummary } from "../../controllers/Payment/payment.controller.js"
 
 import { getDashboardStats, lineChart } from "../../controllers/Dashbaord/dashboard.controller.js"
 
@@ -218,11 +218,14 @@ router.patch("/mocktests/:id/status", updateMockTestStatus);
 router.get("/get/mockTestById/:id", GetMockTestById);
 router.post("/get/mockTestQuestionsById", getAllQuestions);
 router.get("/all/mockTests", allMockTests);
+router.post("/mocktests/reset-attempt", resetMockTestAttempt);
 
 
 // This is Payment routes
 
 router.post("/createPayment", createPayment);
+router.post("/payments/manual", createManualPayment);
+router.get("/payments/summary", getPaymentSummary);
 router.post("/delete/userById", deleteUser)
 router.get("/getAllPaymentHistory", getAllPaymentHistory)
 router.get("/user-purchases-summary", userSummary)
